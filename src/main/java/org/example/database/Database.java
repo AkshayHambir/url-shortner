@@ -1,8 +1,12 @@
 package org.example.database;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.*;
 
 public class Database {
+    private static final Logger logger = LoggerFactory.getLogger(Database.class);
     private static Connection conn;
 
     public static void init() {
@@ -29,6 +33,7 @@ public class Database {
             """);
 
         } catch (SQLException e) {
+            logger.error("Error : {} - {}", e.getErrorCode(), e.getMessage());
             throw new RuntimeException("Failed to connect/init H2", e);
         }
     }
@@ -42,6 +47,7 @@ public class Database {
             else ps.setNull(3, Types.INTEGER);
             ps.executeUpdate();
         } catch (SQLException e) {
+            logger.error("Error : {} - {}", e.getErrorCode(), e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -53,6 +59,7 @@ public class Database {
             ResultSet rs = ps.executeQuery();
             return rs.next();
         } catch (SQLException e) {
+            logger.error("Error : {} - {}", e.getErrorCode(), e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -64,6 +71,33 @@ public class Database {
             ResultSet rs = ps.executeQuery();
             return rs.next() ? rs.getString(1) : null;
         } catch (SQLException e) {
+            logger.error("Error : {} - {}", e.getErrorCode(), e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static boolean register(String username, String password) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO users (username, password) VALUES (?, ?)")) {
+            ps.setString(1, username);
+            ps.setString(2, password);
+            ps.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            logger.error("Error : {} - {}", e.getErrorCode(), e.getMessage());
+            return false;
+        }
+    }
+
+    public static Integer authenticate(String username, String password) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT id FROM users WHERE username = ? AND password = ?")) {
+            ps.setString(1, username);
+            ps.setString(2, password);
+            ResultSet rs = ps.executeQuery();
+            return rs.next() ? rs.getInt("id") : null;
+        } catch (SQLException e) {
+            logger.error("Error : {} - {}", e.getErrorCode(), e.getMessage());
             throw new RuntimeException(e);
         }
     }
